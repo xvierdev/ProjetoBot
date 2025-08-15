@@ -8,3 +8,4 @@ Construir uma aplicação que utiliza natural language interface para fazer oper
 ## :earth_americas: Referências:
 - [build mcp sqlite server](https://x.com/akshay_pachaar/status/1921552222480949638?t=74a98O4Bq6lsr9ImUqslsw&s=19)
 - [padrão de commits](https://github.com/iuricode/padroes-de-commits)
+- [Ollama for Python](https://github.com/ollama/ollama-python)
