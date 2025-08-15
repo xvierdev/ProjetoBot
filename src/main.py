@@ -8,7 +8,7 @@ mcp = FastMCP('sqlite-demo')
 def add_data(query: str) -> bool:
     """Execute an INSERT query to add a record."""
     conn = sqlite3.connect('demo.db')
-    conn.execute()
+    conn.execute(query)
     conn.commit()
     conn.close()
     return True
