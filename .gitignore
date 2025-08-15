@@ -1,0 +1,7 @@
+# ambiente virtual
+
+.venv/
+venv/
+
+# arquivos de log
+*.log
