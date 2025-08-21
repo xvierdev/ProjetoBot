@@ -1,7 +1,7 @@
 import sqlite3
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, filename='debug.log')
 
 DB_PATH = "demo.db"
 
@@ -39,7 +39,7 @@ def query_execute(query: str) -> bool:
     """
     try:
         with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(query)
+            conn.executescript(query)
             conn.commit()
             return True
     except Exception as e:

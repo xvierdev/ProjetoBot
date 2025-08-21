@@ -28,7 +28,10 @@ def get_query(msg: str) -> str | None:
     )
     return response.text
 
+
 if __name__ == '__main__':
-    pedido = input('Seu desejo, Mestre!\n> ')
+    pedido = input('Seu desejo, Mestre!\n> ').strip().lower()
+    if pedido == 'sair':
+        exit()
     result = get_query(pedido)
     print(f'A query retornada foi: {result}')
