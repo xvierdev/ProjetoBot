@@ -11,3 +11,6 @@ venv/
 
 # arquivos de banco de dados sqlite
 *.db
+
+# arquivos temporários do pyhton
+__pycache__/
