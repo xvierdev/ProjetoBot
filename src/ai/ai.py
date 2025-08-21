@@ -1,11 +1,7 @@
 import logging
 from ollama import Client
 
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG,
-    encoding='utf-8'
-)
+logging.getLogger(__name__)
 
 _PROMPT = """
 You are a SQL script generator.
@@ -16,14 +12,16 @@ You will receive a request in text format.
 Translate this request into a query.
 Make query correct and optimizeds.
 Show only the query without any text, comments, or Markdown.
+Do not use any markdown. Show only the query.
+Do not show your thinking process. Respond directly with the query.
 The output should be plain text. """
 
 client = Client()
 
 client.create(
     model='db-assistent',
-    from_='gemma3',
-    system='You are a SQL script generator.',
+    from_='qwen3:4b',
+    system=_PROMPT,
     stream=False
 )
 
@@ -31,10 +29,26 @@ client.create(
 def get_query(msg: str) -> str | None:
     if msg is None or '':
         return None
-    result = client.generate(model='db-assistent',
-                             prompt=_PROMPT+msg)['response']
-    logging.info(result)
-    return result
+    result = client.generate(
+        model='db-assistent',
+        prompt=msg,
+        think=False,
+        options={
+            'temperature': 0.0
+        }
+    ).get('response')
+    clean_result = _clean_query(result)
+    logging.info(clean_result)
+    return clean_result
+
+
+def _clean_query(query: str):
+    level0 = query
+    if '</think>' in query:
+        level0 = query.split('</think>')[1]
+    level1 = level0.replace('```sql', '').replace('```', '')
+    level2 = level1.strip()
+    return level2
 
 
 if __name__ == '__main__':
