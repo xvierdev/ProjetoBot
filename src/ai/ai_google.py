@@ -15,6 +15,7 @@ estamos usando sqlite no python,
 você receberá um pedido na forma de texto,
 traduza esse pedido em query,
 mostre apenas a query sem textos nem comentários,
+remova as marcas de markdown e mostre o texto puro
 segue o pedido: """
 
 
@@ -30,6 +31,6 @@ def get_query(msg: str) -> str | None:
 
 if __name__ == '__main__':
     print('nossa base de dados se chama \'people\' e o campos disponível é \'name\'')
-    pedido=input('Seu desejo, Mestre!\n> ')
+    pedido = input('Seu desejo, Mestre!\n> ')
     result = get_query(pedido)
     print(f'A query retornada foi: {result}')
