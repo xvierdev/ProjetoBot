@@ -5,3 +5,6 @@ venv/
 
 # arquivos de log
 *.log
+
+# variáveis de ambiente
+.env
