@@ -27,44 +27,28 @@ def init_db():
         logging.error(f'Erro inexperado: {e}')
 
 
-def query_execute(query: str) -> bool:
+def query_run(query: str) -> list | bool:
     """
-    Executa a query genérica.
+    Executa uma query genérica (leitura ou escrita).
 
     Args:
-        query(str): a query a ser executada.
+        query(str): A query a ser executada.
 
     Returns:
-        bool: True em caso de sucesso, False em caso de falha.
+        list: Resultado da consulta se SELECT, True/False para outras operações.
     """
     try:
         with sqlite3.connect(DB_PATH) as conn:
-            conn.executescript(query)
-            conn.commit()
-            return True
+            if query.strip().lower().startswith("select"):
+                result = conn.execute(query).fetchall()
+                return result
+            else:
+                conn.execute(query)
+                conn.commit()
+                return True
     except Exception as e:
         logging.error(f'Erro ao executar query: {e}')
-        return False
-
-
-def query_read(query: str) -> list:
-    """
-    Executa uma query de consulta..
-
-    Args:
-        query(str): A query de consulta na database.
-
-    Returns:
-        list: Uma lista com os dados obtidos.
-    """
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            result = conn.execute(query).fetchall()
-            return result
-    except Exception as e:
-        logging.error(f"Erro ao ler query: {e}")
-        return []
-
+        return False if not query.strip().lower().startswith("select") else []
 
 if __name__ == "__main__":
     init_db()
@@ -76,4 +60,4 @@ if __name__ == "__main__":
         ordem = input('\n> ')
         script = get_query(ordem)
         if script is not None:
-            query_execute(script)
+            query_run(script)
