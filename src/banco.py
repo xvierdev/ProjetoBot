@@ -68,3 +68,12 @@ def query_read(query: str) -> list:
 
 if __name__ == "__main__":
     init_db()
+    # script de teste
+
+    from ai.ai_google import get_query
+    while True:
+        print('Qual a instrução?')
+        ordem = input('\n> ')
+        script = get_query(ordem)
+        if script is not None:
+            query_execute(script)
