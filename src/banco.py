@@ -1,4 +1,7 @@
 import sqlite3
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 DB_PATH = "demo.db"
 
@@ -10,47 +13,58 @@ CREATE TABLE IF NOT EXISTS produtos (
 );
 """
 
+
 def init_db():
-    # cria a tabela se ainda não existir
-    conn = None
+    """Inicializa o banco de dados."""
     try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.executescript(SCHEMA)
-        conn.commit()
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.executescript(SCHEMA)
+            conn.commit()
+            logging.debug(f'Database {DB_PATH} criada com sucesso!')
+    except sqlite3.Error as e:
+        logging.error(f'Erro ao criar banco de dados: {e}')
     except Exception as e:
-        print(f"erro ao iniciar banco: {e}")
-    finally:
-        if conn:
-            conn.close()
+        logging.error(f'Erro inexperado: {e}')
+
 
 def query_execute(query: str) -> bool:
-    # serve pra insert, update, delete
-    conn = None
+    """
+    Executa a query genérica.
+
+    Args:
+        query(str): a query a ser executada.
+
+    Returns:
+        bool: True em caso de sucesso, False em caso de falha.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute(query)
-        conn.commit()
-        return True
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(query)
+            conn.commit()
+            return True
     except Exception as e:
-        print(f"erro ao executar query: {e}")
+        logging.error(f'Erro ao executar query: {e}')
         return False
-    finally:
-        if conn:
-            conn.close()
+
 
 def query_read(query: str) -> list:
-    # serve pra select e retorna lista de resultados
-    conn = None
+    """
+    Executa uma query de consulta..
+
+    Args:
+        query(str): A query de consulta na database.
+
+    Returns:
+        list: Uma lista com os dados obtidos.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
-        result = conn.execute(query).fetchall()
-        return result
+        with sqlite3.connect(DB_PATH) as conn:
+            result = conn.execute(query).fetchall()
+            return result
     except Exception as e:
-        print(f"erro ao ler query: {e}")
+        logging.error(f"Erro ao ler query: {e}")
         return []
-    finally:
-        if conn:
-            conn.close()
+
 
 if __name__ == "__main__":
     init_db()
