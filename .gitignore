@@ -8,3 +8,6 @@ venv/
 
 # variáveis de ambiente
 .env
+
+# arquivos de banco de dados sqlite
+*.db
