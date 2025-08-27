@@ -5,7 +5,7 @@ logging.getLogger(__name__)
 
 _PROMPT = """
 You are a SQL script generator.
-The default database is named 'produtos' and has two columns:
+The default database is named 'products' and has two columns:
 'name' and 'quantity'.
 We are using SQLite3 in Python.
 You will receive a request in text format.
@@ -26,9 +26,9 @@ client.create(
 )
 
 
-def get_query(msg: str) -> str | None:
+def get_query(msg: str) -> str:
     if msg is None or '':
-        return None
+        return ''
     result = client.generate(
         model='db-assistent',
         prompt=msg,
@@ -40,6 +40,21 @@ def get_query(msg: str) -> str | None:
     clean_result = _clean_query(result)
     logging.info(clean_result)
     return clean_result
+
+
+def feedback(msg: str):
+    result = client.generate(
+        model='db-assistent',
+        prompt='this is return of the last query:' + str(msg) +
+        'respond succinctly and without embellishments, for example:' +
+        ' \'data inserted successfully\' or' +
+        ' \'inserted <num> of <items> successfully. ',
+        think=False,
+        options={
+            'temperature': 0.0
+        }
+    ).get('response')
+    return result
 
 
 def _clean_query(query: str):

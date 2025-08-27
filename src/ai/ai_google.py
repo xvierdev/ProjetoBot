@@ -9,22 +9,37 @@ client = genai.Client(api_key=os.getenv("API_KEY"))
 
 
 _PROMPT = """
-Você é um gerador de scripts sql, a base de dados
-padrão se chama 'produtos' e tem dois campos: nome(str) e quantidade(int),
-estamos usando sqlite no python,
-você receberá um pedido na forma de texto,
-traduza esse pedido em query,
-mostre apenas a query sem textos nem comentários,
-remova as marcas de markdown e mostre o texto puro
-segue o pedido: """
+Translate the user's request into a single,
+optimized SQL query for an SQLite3 database.
+The database is named 'products' with two columns: 'name' and 'quantity'.
+Respond only with the query, without any additional text, markdown,
+or comments. The output must be plain text. """
 
 
-def get_query(msg: str) -> str | None:
+_PROMPT_RESULT_ANALISE = """
+You are an SQL query result analyzer.
+You receive the original query and the obtained result.
+Analyze the data and respond concisely in English, stating whether the
+result is expected. Summarize the obtained result clearly, such as
+"2 products inserted," "5 avocados in stock," or "coffee deleted successfully."
+Be objective and straight to the point.
+"""
+
+
+def get_query(msg: str):
     if msg is None or '':
-        return None
+        return ''
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=_PROMPT + msg,
+    )
+    return response.text
+
+
+def feedback(query, msg: str):
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=_PROMPT_RESULT_ANALISE + msg + 'query de consulta = ' + query,
     )
     return response.text
 
