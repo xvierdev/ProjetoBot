@@ -1,6 +1,7 @@
 from google import genai
 from dotenv import load_dotenv
 import os
+import logging
 
 # Carrega as variáveis do arquivo .env
 load_dotenv()
@@ -33,7 +34,12 @@ def get_query(msg: str):
         model="gemini-2.5-flash",
         contents=_PROMPT + msg,
     )
+    if any(cmd in response.text.lower() for cmd in ['delete', 'drop', 'update', 'alter', 'insert', 'create', 'replace', 'truncate', 'merge']):
+        return "Operation not allowed."
+    logging.info(response.text)
     return response.text
+
+   
 
 
 def feedback(query, msg: str):
