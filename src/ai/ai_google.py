@@ -39,8 +39,6 @@ def get_query(msg: str):
     logging.info(response.text)
     return response.text
 
-   
-
 
 def feedback(query, msg: str):
     response = client.models.generate_content(
