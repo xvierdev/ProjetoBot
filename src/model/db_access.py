@@ -1,10 +1,10 @@
 import logging
 import sqlite3
 
-logging.basicConfig(level=logging.DEBUG)
+logging.getLogger(__name__)
 
 
-def _open_schema(file_schema: str = 'schema.sql') -> str:
+def open_schema(file_schema: str = 'schema.sql') -> str:
     """
     Opens file containing an SQL script.
 
@@ -17,7 +17,7 @@ def _open_schema(file_schema: str = 'schema.sql') -> str:
     try:
         with open(file_schema, 'r', encoding='utf-8') as file:
             schema = file.read()
-            logging.info('Script {file_schema} sql lido com sucesso.')
+            logging.debug('Script {file_schema} sql lido com sucesso.')
             return schema
     except FileNotFoundError as error:
         logging.exception(error)
@@ -34,9 +34,9 @@ def init_db(db_name='test.db', schema: str = ''):
                 if schema != '':
                     conn.executescript(schema)
                     conn.commit()
-                    logging.info(f'Database {db_name} criada com sucesso!')
+                    logging.debug(f'Database {db_name} criada com sucesso!')
                     return
-            raise ValueError(f'The schema can\'t be \'{schema}\'.')
+            raise ValueError(f"The schema can't be '{schema}'")
     except sqlite3.Error as e:
         logging.exception(f'Erro ao criar banco de dados: {e}')
         raise
@@ -45,7 +45,34 @@ def init_db(db_name='test.db', schema: str = ''):
         raise
 
 
+def query_run(db_name: str, query: str) -> list | str | bool:
+    """
+    Executa uma query genérica (leitura ou escrita).
+
+    Args:
+        query(str): A query a ser executada.
+
+    Returns:
+        list: Resultado da consulta se SELECT, True/False para outras
+        operações.
+    """
+    try:
+        with sqlite3.connect(db_name) as conn:
+            if query.strip().lower().startswith("select"):
+                result = conn.execute(query).fetchall()
+                logging.debug(f'{result}')
+                textual = ';'.join([str(item) for item in result]).replace(
+                    '(', '').replace(')', '')
+                return textual
+            else:
+                result = conn.execute(query).fetchall()
+                conn.commit()
+                logging.debug(f'{query=} has been executed.')
+                return result
+    except Exception as e:
+        logging.error(f'Erro ao executar query: {e}')
+        return False if not query.strip().lower().startswith("select") else []
+
+
 if __name__ == '__main__':
-    # test = _open_schema()
-    # print(test)
-    init_db('products.db', _open_schema())
+    init_db('teste.db', open_schema())
