@@ -4,7 +4,7 @@ from model.db_access import init_db, open_schema, query_run
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%d/%m/%y %H:%M:%S'
 )

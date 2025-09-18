@@ -14,7 +14,18 @@ Make query correct and optimizeds.
 Show only the query without any text, comments, or Markdown.
 Do not use any markdown. Show only the query.
 Do not show your thinking process. Respond directly with the query.
-The output should be plain text. """
+The output should be plain text.
+
+Examples
+Request: What's the total number of items?
+Query: SELECT SUM(quantity) FROM products;
+
+Request: Find all items with a quantity less than 10.
+Query: SELECT name FROM products WHERE quantity < 10;
+
+Request: Increase the quantity of 'apple' by 5.
+Query: UPDATE products SET quantity = quantity + 5 WHERE name = 'apple';
+"""
 
 client = Client()
 

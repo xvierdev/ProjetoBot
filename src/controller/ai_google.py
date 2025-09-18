@@ -1,56 +1,79 @@
-from google import genai
-from dotenv import load_dotenv
 import os
 import logging
+from google import genai
+from dotenv import load_dotenv
 
 # Carrega as variáveis do arquivo .env
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("API_KEY"))
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    logging.error("API_KEY not found in environment variables.")
+    raise ValueError(
+        "The API key not found. Check .env file.")
+
+client = genai.Client(api_key=API_KEY)
 
 
-_PROMPT = """
-Translate the user's request into a single,
-optimized SQL query for an SQLite3 database.
-The database is named 'products' with two columns: 'name' and 'quantity'.
-Respond only with the query, without any additional text, markdown,
-or comments. The output must be plain text. """
+def _get_prompt(file_name: str = 'config.prompt'):
+    try:
+        with open(file_name, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        logging.error(f"File '{file_name}' not found.")
+        raise
 
 
-_PROMPT_RESULT_ANALISE = """
-You are an SQL query result analyzer.
-You receive the original query and the obtained result.
-Analyze the data and respond concisely in English, stating whether the
-result is expected. Summarize the obtained result clearly, such as
-"2 products inserted," "5 avocados in stock," or "coffee deleted successfully."
-Be objective and straight to the point.
-"""
-
-
-def get_query(msg: str):
-    if msg is None or '':
+def get_query(msg: str, filter: bool = True):
+    if not msg:
         return ''
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=_PROMPT + msg,
-    )
-    if any(cmd in response.text.lower() for cmd in ['delete', 'drop', 'update', 'alter', 'insert', 'create', 'replace', 'truncate', 'merge']):
-        return "Operation not allowed."
-    logging.info(response.text)
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=_get_prompt('config.prompt') + msg
+        )
+
+        query = (response.text or '').strip()
+        logging.debug(f"Query gerada: {query}")
+
+        if not allow_destructive:
+            destructive_commands = ['delete', 'drop', 'update', 'alter',
+                                    'insert', 'create', 'replace', 'truncate', 'merge']
+            if any(cmd in query.lower() for cmd in destructive_commands):
+                return "Operação não permitida. Apenas consultas de leitura são suportadas."
+
+        return query
+
+    except FileNotFoundError:
+        # A exceção já foi tratada em _get_prompt, mas a levantamos aqui para o chamador
+        return "Erro: Arquivo de configuração de prompt não encontrado."
+    except Exception as e:
+        logging.error(f"Erro ao gerar a query: {e}")
+        return "Erro ao processar a requisição. Por favor, tente novamente."
+    # response = client.models.generate_content(
+    #     model="gemini-2.5-flash",
+    #     contents=_get_prompt() + msg,
+    # )
+    # if filter and any(
+    #         cmd in response.text.lower() if response.text != None else ''
+    #         for cmd in ['delete', 'drop', 'update', 'alter', 'insert', 'create', 'replace', 'truncate', 'merge']):
+    #     return "Operation not allowed."
+    # logging.debug(response.text)
+    # return response.text
 
 
 def feedback(query, msg: str):
     response = client.models.generate_content(
         model='gemini-2.5-flash',
-        contents=_PROMPT_RESULT_ANALISE + msg + 'query de consulta = ' + query,
+        contents=_get_prompt('analyse.prompt') + msg +
+        'original query = ' + query,
     )
     return response.text
 
 
 if __name__ == '__main__':
-    pedido = input('Seu desejo, Mestre!\n> ').strip().lower()
-    if pedido == 'sair':
+    pedido = input('Test input > ').strip().lower()
+    if pedido.strip().lower() in ('quit', 'exit', 'sair', 'fechar'):
         exit()
-    result = get_query(pedido)
-    print(f'A query retornada foi: {result}')
+    result = get_query(pedido, True)
+    print(f'{result=}')
