@@ -22,11 +22,11 @@ def open_schema(file_schema: str) -> str:
     try:
         with open(file_schema, 'r', encoding='utf-8') as file:
             schema = file.read()
-            logger.debug(f"Schema '{file_schema}' lido com sucesso.")
+            logger.debug(f"Schema '{file_schema}' was read successfully.")
             return schema
     except FileNotFoundError as e:
         logger.error(
-            f"Arquivo de schema não encontrado em '{file_schema}': {e}")
+            f"Schema file not found in '{file_schema}': {e}")
         raise
 
 
@@ -39,16 +39,16 @@ def init_db(db_name: str, schema: str):
         schema (str): Script SQL para inicializar o banco.
     """
     if not schema:
-        raise ValueError("O conteúdo do schema não pode ser vazio.")
+        raise ValueError("The schema content cannot be empty.")
     try:
         with sqlite3.connect(db_name) as conn:
             conn.executescript(schema)
             conn.commit()
             logger.info(
-                f"Banco de dados '{db_name}' inicializado com sucesso.")
+                f"Database '{db_name}' initialized successfully.")
     except sqlite3.Error as e:
         logger.exception(
-            f"Erro do SQLite ao inicializar o banco de dados '{db_name}': {e}")
+            f"SQLite error when initializing the database '{db_name}': {e}")
         raise
 
 
@@ -70,16 +70,16 @@ def query_run(db_name: str, query: str) -> List[Tuple[Any, ...]] | str:
     # Outras operações (UPDATE, INSERT) devem ter funções específicas
     # se necessárias.
     if not query.strip().lower().startswith("select"):
-        logger.warning(f"Tentativa de executar query não permitida: {query}")
-        return "Operação não permitida."
+        logger.warning(f"Attempt to execute query not allowed: {query}")
+        return "Operation not permitted."
 
     try:
         with sqlite3.connect(db_name) as conn:
             cursor = conn.cursor()
             cursor.execute(query)
             result = cursor.fetchall()
-            logger.debug(f"Query executada com sucesso. Resultado: {result}")
+            logger.debug(f"Query executed successfully. Result: {result}")
             return result
     except sqlite3.Error as e:
-        logger.error(f"Erro ao executar a query '{query}': {e}")
-        return f"Erro de sintaxe na sua solicitação: {e}"
+        logger.error(f"Error executing the query. '{query}': {e}")
+        return f"There is a syntax error in your request: {e}"

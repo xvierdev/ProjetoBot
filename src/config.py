@@ -17,6 +17,7 @@ DB_SCHEMA_FILE = os.path.join(BASE_DIR, "src", "model", "schema.sql")
 
 # --- Configurações da IA (Google Gemini) ---
 API_KEY = os.getenv("API_KEY")
+BOT_KEY = os.getenv("BOT_KEY")
 MODEL_NAME = "gemini-2.5-flash"
 PROMPT_QUERY_GENERATION_FILE = os.path.join(
     BASE_DIR, "prompts", "generate_query.prompt")

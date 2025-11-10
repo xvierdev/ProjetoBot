@@ -6,18 +6,16 @@ import config
 logger = logging.getLogger(__name__)
 
 # Inicializa o cliente Ollama.
-# Ele se conectará ao serviço Ollama rodando localmente
-# (http://localhost:11434) por padrão.
 client = Client()
 
 
 def _get_prompt(file_name: str) -> str:
-    """Lê um arquivo de prompt. (Função auxiliar idêntica à do ai_google.py)"""
+    """Lê um arquivo de prompt."""
     try:
         with open(file_name, 'r', encoding='utf-8') as f:
             return f.read().strip()
     except FileNotFoundError:
-        logger.error(f"Arquivo de prompt '{file_name}' não foi encontrado.")
+        logger.error(f"The prompt file '{file_name}' could not be found.")
         raise
 
 
@@ -104,5 +102,5 @@ def feedback(original_query: str, db_result) -> str | None:
         return summary
 
     except Exception as e:
-        logger.exception(f"Erro ao gerar feedback da IA com Ollama: {e}")
-        return "Não foi possível gerar um feedback para o resultado."
+        logger.exception(f"Error generating AI feedback with Ollama: {e}")
+        return "It was not possible to generate feedback for the result."
