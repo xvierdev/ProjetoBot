@@ -1,79 +1,101 @@
-import os
+import json
 import logging
 from google import genai
-from dotenv import load_dotenv
+import config
 
-# Carrega as variáveis do arquivo .env
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("API_KEY")
-if not API_KEY:
-    logging.error("API_KEY not found in environment variables.")
-    raise ValueError(
-        "The API key not found. Check .env file.")
+if not config.API_KEY:
+    logger.critical("API_KEY não encontrada nas variáveis de ambiente.")
+    raise ValueError("API_KEY não foi encontrada. Verifique o arquivo .env.")
 
-client = genai.Client(api_key=API_KEY)
+client = genai.Client(api_key=config.API_KEY)
 
 
-def _get_prompt(file_name: str = 'config.prompt'):
+def _get_prompt(file_name: str) -> str:
+    """Lê um arquivo de prompt."""
     try:
         with open(file_name, 'r', encoding='utf-8') as f:
             return f.read().strip()
     except FileNotFoundError:
-        logging.error(f"File '{file_name}' not found.")
+        logger.error(f"Arquivo de prompt '{file_name}' não foi encontrado.")
         raise
 
 
-def get_query(msg: str, filter: bool = True):
-    if not msg:
-        return ''
+def get_query_action(user_request: str, product_context: str) -> dict:
+    """
+    Analisa a solicitação do usuário, usando um contexto fornecido,
+    e retorna uma ação.
+
+    Args:
+        user_request (str): A solicitação do usuário em linguagem natural.
+        product_context (str): Uma string com a lista de produtos disponíveis.
+
+    Returns:
+        dict: Um dicionário com as chaves 'action' e 'payload'.
+    """
+    error_response = {
+        "action": "user_message",
+        "payload": "Sorry, an error occurred while communicating with the AI. Please try again."
+    }
+
+    if not user_request:
+        return {"action": "user_message", "payload": ""}
+
+    clean_json_string = ""
     try:
+        prompt_template = _get_prompt(config.PROMPT_QUERY_GENERATION_FILE)
+
+        # Injeta a lista de produtos no placeholder {product_list} do prompt
+        prompt_with_context = prompt_template.replace(
+            '{product_list}', product_context)
+
+        # Mantendo sua implementação da API intacta
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=_get_prompt('config.prompt') + msg
+            model=config.MODEL_NAME,
+            contents=prompt_with_context + "\n\nRequest: " + user_request + "\nResponse:"
         )
 
-        query = (response.text or '').strip()
-        logging.debug(f"Query gerada: {query}")
+        raw_text = response.text or ""
+        clean_json_string = raw_text.strip().replace("```json", "").replace("```", "")
+        logger.debug(f"JSON received from AI: {clean_json_string}")
 
-        if not allow_destructive:
-            destructive_commands = ['delete', 'drop', 'update', 'alter',
-                                    'insert', 'create', 'replace', 'truncate', 'merge']
-            if any(cmd in query.lower() for cmd in destructive_commands):
-                return "Operação não permitida. Apenas consultas de leitura são suportadas."
+        if not clean_json_string:
+            logger.warning("The AI returned an empty response.")
+            return error_response
 
-        return query
+        return json.loads(clean_json_string)
 
+    except json.JSONDecodeError:
+        logger.error(f"Failed to decode JSON from AI: {clean_json_string}")
+        return error_response
     except FileNotFoundError:
-        # A exceção já foi tratada em _get_prompt, mas a levantamos aqui para o chamador
-        return "Erro: Arquivo de configuração de prompt não encontrado."
+        return {
+            "action": "user_message",
+            "payload": "Critical Error: Prompt configuration file not found."
+        }
     except Exception as e:
-        logging.error(f"Erro ao gerar a query: {e}")
-        return "Erro ao processar a requisição. Por favor, tente novamente."
-    # response = client.models.generate_content(
-    #     model="gemini-2.5-flash",
-    #     contents=_get_prompt() + msg,
-    # )
-    # if filter and any(
-    #         cmd in response.text.lower() if response.text != None else ''
-    #         for cmd in ['delete', 'drop', 'update', 'alter', 'insert', 'create', 'replace', 'truncate', 'merge']):
-    #     return "Operation not allowed."
-    # logging.debug(response.text)
-    # return response.text
+        logger.exception(f"Unexpected error while generating action: {e}")
+        return error_response
 
 
-def feedback(query, msg: str):
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=_get_prompt('analyse.prompt') + msg +
-        'original query = ' + query,
-    )
-    return response.text
+def feedback(original_query: str, db_result) -> str | None:
+    """
+    Gera uma resposta em linguagem natural baseada no resultado da query.
+    (Esta função permanece a mesma)
+    """
+    try:
+        prompt_template = _get_prompt(config.PROMPT_FEEDBACK_ANALYSIS_FILE)
+        context = (
+            f"\nThe original SQL query was: '{original_query}'.\n"
+            f"The database result was: '{str(db_result)}'."
+        )
 
-
-if __name__ == '__main__':
-    pedido = input('Test input > ').strip().lower()
-    if pedido.strip().lower() in ('quit', 'exit', 'sair', 'fechar'):
-        exit()
-    result = get_query(pedido, True)
-    print(f'{result=}')
+        response = client.models.generate_content(
+            model=config.MODEL_NAME,
+            contents=prompt_template + context
+        )
+        return response.text
+    except Exception as e:
+        logger.exception(f"Erro ao gerar feedback da IA: {e}")
+        return "Não foi possível gerar um feedback para o resultado."

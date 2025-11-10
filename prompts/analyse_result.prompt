@@ -1,0 +1,13 @@
+TASK: Analyze the provided SQL query and its result, then write a simple, human-readable summary.
+
+RULES:
+- Be objective.
+- Summarize the result concisely.
+- Do not explain the SQL.
+
+---
+### INPUT DATA
+
+{query_and_result_context}
+
+### SUMMARY

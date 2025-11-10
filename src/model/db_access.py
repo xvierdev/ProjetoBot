@@ -1,78 +1,85 @@
 import logging
 import sqlite3
+from typing import List, Any, Tuple
 
-logging.getLogger(__name__)
+# Configura um logger específico para este módulo
+logger = logging.getLogger(__name__)
 
 
-def open_schema(file_schema: str = 'schema.sql') -> str:
+def open_schema(file_schema: str) -> str:
     """
-    Opens file containing an SQL script.
+    Lê o conteúdo de um arquivo de schema SQL.
 
     Args:
-        file_schema (str): path of sql script. Defaults to 'schema.sql'.
+        file_schema (str): Caminho para o arquivo .sql.
 
     Returns:
-        str: The content of the SQL script as a string.
+        str: O conteúdo do script SQL.
+
+    Raises:
+        FileNotFoundError: Se o arquivo de schema não for encontrado.
     """
     try:
         with open(file_schema, 'r', encoding='utf-8') as file:
             schema = file.read()
-            logging.debug('Script {file_schema} sql lido com sucesso.')
+            logger.debug(f"Schema '{file_schema}' lido com sucesso.")
             return schema
-    except FileNotFoundError as error:
-        logging.exception(error)
+    except FileNotFoundError as e:
+        logger.error(
+            f"Arquivo de schema não encontrado em '{file_schema}': {e}")
         raise
 
 
-def init_db(db_name='test.db', schema: str = ''):
+def init_db(db_name: str, schema: str):
     """
-    Initialize the database.
-    """
-    try:
-        with sqlite3.connect(db_name) as conn:
-            if schema is not None:
-                if schema != '':
-                    conn.executescript(schema)
-                    conn.commit()
-                    logging.debug(f'Database {db_name} criada com sucesso!')
-                    return
-            raise ValueError(f"The schema can't be '{schema}'")
-    except sqlite3.Error as e:
-        logging.exception(f'Erro ao criar banco de dados: {e}')
-        raise
-    except Exception as e:
-        logging.exception(f'Erro inexperado: {e}')
-        raise
-
-
-def query_run(db_name: str, query: str) -> list | str | bool:
-    """
-    Executa uma query genérica (leitura ou escrita).
+    Inicializa o banco de dados e executa o schema.
 
     Args:
-        query(str): A query a ser executada.
-
-    Returns:
-        list: Resultado da consulta se SELECT, True/False para outras
-        operações.
+        db_name (str): Nome do arquivo do banco de dados.
+        schema (str): Script SQL para inicializar o banco.
     """
+    if not schema:
+        raise ValueError("O conteúdo do schema não pode ser vazio.")
     try:
         with sqlite3.connect(db_name) as conn:
-            if query.strip().lower().startswith("select"):
-                result = conn.execute(query).fetchall()
-                logging.debug(f'{result}')
-                textual = ';'.join([str(item) for item in result]).replace(
-                    '(', '').replace(')', '')
-                return textual
-            else:
-                result = conn.execute(query).fetchall()
-                conn.commit()
-                logging.debug(f'{query=} has been executed.')
-                return result
-    except Exception as e:
-        logging.error(f'Erro ao executar query: {e}')
-        return False if not query.strip().lower().startswith("select") else []
+            conn.executescript(schema)
+            conn.commit()
+            logger.info(
+                f"Banco de dados '{db_name}' inicializado com sucesso.")
+    except sqlite3.Error as e:
+        logger.exception(
+            f"Erro do SQLite ao inicializar o banco de dados '{db_name}': {e}")
+        raise
 
 
-if __name__ == '__main__':
-    init_db('teste.db', open_schema())
+def query_run(db_name: str, query: str) -> List[Tuple[Any, ...]] | str:
+    """
+    Executa uma query de LEITURA (SELECT) de forma segura.
+    Retorna os resultados como uma lista de tuplas ou uma mensagem de erro.
+
+    Args:
+        db_name (str): Nome do arquivo do banco de dados.
+        query (str): A query SQL a ser executada.
+
+    Returns:
+        List[Tuple[Any, ...]]: Uma lista de tuplas com os resultados
+        da consulta.
+        str: Uma mensagem de erro se a query falhar ou não for permitida.
+    """
+
+    # Outras operações (UPDATE, INSERT) devem ter funções específicas
+    # se necessárias.
+    if not query.strip().lower().startswith("select"):
+        logger.warning(f"Tentativa de executar query não permitida: {query}")
+        return "Operação não permitida."
+
+    try:
+        with sqlite3.connect(db_name) as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+            logger.debug(f"Query executada com sucesso. Resultado: {result}")
+            return result
+    except sqlite3.Error as e:
+        logger.error(f"Erro ao executar a query '{query}': {e}")
+        return f"Erro de sintaxe na sua solicitação: {e}"
