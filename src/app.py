@@ -1,6 +1,5 @@
 import logging
 
-from click import command
 import config
 import telebot
 import whisper
